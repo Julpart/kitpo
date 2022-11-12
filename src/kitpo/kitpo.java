@@ -29,11 +29,44 @@ public class kitpo {
 		list.printList();
 		list.exportToXML();
 		*/
+		 
+		 
+		 /*
 			MyVector dot1 = new MyVector(-10,12,7,3);
 			System.out.println(dot1.getLength());
 	              View w = new View();
 	      	      w.setVisible(true);
-	          
+	      */ 
+		 
+		 /*
+		 LinkedListFactory factory = new LinkedListFactory();
+		 IUserType dot1 = new MyDot(1,1);
+		 LinkedList list = factory.getBuilderByName(dot1.getClassName());
+		 for(int i = 0;i<1000000;i++) {
+			 list.add(new MyDot());
+		 }
+		 list.printForSort();
+		 list.sort();
+		 list.printForSort();
+		
+		 */
+		 LinkedListFactory factory = new LinkedListFactory();
+		 LinkedList list = factory.getBuilderByName(new MyDot().getClassName());
+		 for(int i = 0;i<100;i++) {
+			 if(i % 3 == 0 ) {
+				 list.addInNewList(new MyDot());
+			 }else {
+				 list.add(new MyDot());
+			 }
+			 
+		 }
+		 list.printForTest();
+		 list.removeByIndex(35);
+		 list.printForTest();
+		 list.addByIndex(new MyDot(100,-100), 40);
+		 list.printForTest();
+		 list.sort();
+		 list.printForTest();
 	    }
 }
 

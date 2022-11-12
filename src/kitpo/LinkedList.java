@@ -32,6 +32,19 @@ class Node<V> {
     }
 }
 
+class HeadNode<V> {
+	HeadNode<V> next;
+	Node<V> data;
+    HeadNode<V> prev;
+    
+    HeadNode (Node<V> data,HeadNode<V> next,HeadNode<V> prev) {
+        this.data = data;
+        this.next = next;
+        this.prev = prev;
+        
+    }
+}
+
 interface Consumer<V> {
 	void accept(V data);
 
@@ -42,18 +55,20 @@ public class LinkedList<V extends IUserType> {
 	
 	public void forEach(Consumer<V> action) {
 		Objects.requireNonNull(action);
-		Node<V> currNode = this.head.next;
-        while (currNode != this.head) {
+		Node<V> currNode = this.head.data.next;
+        while (currNode != this.head.data) {
             action.accept(currNode.data);
             currNode = currNode.next;
         }
 	}
   
-    private Node<V> head = new Node<V>(null,null,null);
+    private HeadNode<V> head = new HeadNode<V>(new Node<V>(null,null,null),null,null);
+    private HeadNode<V> currHeadNode = head;
     private transient int size = 0;
     private IUserType type = null;
     public LinkedList() {
         head.next = head.prev = head;
+        head.data.next = head.data.prev = head.data;
     }
     
     public LinkedList<IUserType> copy() {
@@ -76,12 +91,43 @@ public class LinkedList<V extends IUserType> {
     public boolean add(V data) {
     	if(type != null) {
     		if(data.getClassName().equals(type.getClassName())) {
-    			addBefore(data, this.head);
+    			if(this.currHeadNode == this.head) {
+    	    		addInNewList(data);
+    	    		return true;
+    	    	}
+    			addBefore(data, this.currHeadNode.data);
     	        return true;
     		}else return false;
     		
     	}else {
-    		addBefore(data, this.head);
+    		if(this.currHeadNode == this.head) {
+        		addInNewList(data);
+        		return true;
+        	}
+    		addBefore(data, this.currHeadNode.data);
+    		return true;
+    	}
+    }
+    
+    public boolean addInNewList(V data) {
+    	if(type != null) {
+    		if(data.getClassName().equals(type.getClassName())) {
+    			HeadNode<V> HeadNode = new HeadNode(new Node(null,null,null),head,currHeadNode);
+    			this.currHeadNode.next = HeadNode;
+    			this.currHeadNode = HeadNode;
+    			this.head.prev = this.currHeadNode;
+    			this.currHeadNode.data.next = this.currHeadNode.data.prev = this.currHeadNode.data;
+    			addBefore(data, this.currHeadNode.data);
+    	        return true;
+    		}else return false;
+    		
+    	}else {
+    		HeadNode<V> HeadNode = new HeadNode(new Node(null,null,null),head,currHeadNode);
+			this.currHeadNode.next = HeadNode;
+			this.currHeadNode = HeadNode;
+			this.head.prev = this.currHeadNode;
+			this.currHeadNode.data.next = this.currHeadNode.data.prev = this.currHeadNode.data;
+    		addBefore(data, this.currHeadNode.data);
     		return true;
     	}
     }
@@ -100,7 +146,7 @@ public class LinkedList<V extends IUserType> {
     }
     	
     public boolean remove() {
-        remove(head.prev);
+        remove(currHeadNode.data.prev);
         return true;
     }
     
@@ -110,8 +156,8 @@ public class LinkedList<V extends IUserType> {
     }
     
     public void clean() {
-    	for(int i=0;i<this.size;i++) {
-    		remove(head.prev);
+    	for(int i=0;i<=this.size;i++) {
+    		remove(currHeadNode.data.prev);
     	}
     	this.type = null;
     	this.comparatorType = null;
@@ -137,8 +183,17 @@ public class LinkedList<V extends IUserType> {
     }
     
     private boolean remove(Node<V> node){
-    	if (node == head)
-            throw new NoSuchElementException();
+    	if (node == currHeadNode.data.next && node == currHeadNode.data.prev) {
+    		if(currHeadNode == head) {
+    			throw new NoSuchElementException();
+    		}else {
+    			currHeadNode.prev.next = currHeadNode.next;
+    			currHeadNode.next.prev = currHeadNode.prev;
+    			currHeadNode = currHeadNode.prev;
+    			return true;
+    		}
+    	}
+            
     	node.prev.next = node.next;
     	node.next.prev = node.prev;
     	node.next = node.prev = null;
@@ -151,28 +206,87 @@ public class LinkedList<V extends IUserType> {
     private Node<V> index(int index){
     	if (index < 0 || index >= size)
             throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
-    	Node<V> node = head;
-    	
-    	if (index < (size >> 1)) {
-            for (int i = 0; i <= index; i++)
+    	HeadNode<V> headNode = head.next;
+    	Node<V> node = headNode.data.next;
+  //  	if (index < (size >> 1)) {
+            for (int i = 0; i < index; i++)   {    	
                 node = node.next;
-        } else {
-            for (int i = size; i > index; i--)
+            if(node == headNode.data) {
+            	headNode = headNode.next;
+            	node = headNode.data.next;
+            }
+            }
+/*       } else {
+    	    headNode = head.prev;
+    	    node = headNode.data.prev;
+            for (int i = size; i > index; i--) {
                 node = node.prev;
+                if(node == headNode.data) {
+                	headNode = headNode.prev;
+                	node = headNode.data.prev;
+                }
+            }
         }
+  */     
         return node;
     }
     
     public String printList() {
-        Node<V> currNode = this.head.next;
-        String str = "";
+        HeadNode<V> head = this.head.next;
+        Node<V> currNode = head.data.next;
+        String str = "List 1: ";
         int i = 0;
-        while (currNode != this.head) {
+        int j = 1;
+        while (true) {
+        	if(currNode == head.data) {
+        		j++;
+        		head = head.next;
+        		if(head == this.head) break;
+        		currNode = head.data.next;
+        		str += "  List " + j +": ";
+        	}
+        	str += i +") " + currNode.data + "; ";
         	i++;
-        	str += i +": " + currNode.data + "; ";
             currNode = currNode.next;
         }
         return str;
+    }
+    
+    public void printForSort() {
+    	 HeadNode<V> head = this.head.next;
+         Node<V> currNode = head.data.next;
+         int i = 0;
+         while (true) {
+         	if(currNode == head.data) {
+         		head = head.next;
+         		if(head == this.head) break;
+         		currNode = head.data.next;
+         	}
+         	System.out.println(i+ ")" + currNode.data);
+         	i++;
+             currNode = currNode.next;
+         }
+    }
+    
+    public void printForTest() {
+    	HeadNode<V> head = this.head.next;
+        Node<V> currNode = head.data.next;
+        int i = 0;
+        int j = 1;
+        System.out.print("List 1: ");
+        while (true) {
+        	if(currNode == head.data) {
+        		System.out.println();
+        		j++;
+        		head = head.next;
+        		if(head == this.head) break;
+        		currNode = head.data.next;
+        		System.out.print("List " + j + ": ");
+        	}
+        	System.out.print(i +") " + currNode.data + "; ");
+        	i++;
+            currNode = currNode.next;
+        }
     }
     
     private void heapify(int length, int i) {
@@ -199,10 +313,12 @@ public class LinkedList<V extends IUserType> {
     public void sort() {
     	if (this.size == 0) return;
     	
-    	for (int i = this.size / 2-1; i >= 0; i--)
+    	for (int i = this.size / 2-1; i >= 0; i--) {
+    		System.out.println(i);
             heapify(this.size, i);
-    	
+    	}
     	 for (int i = this.size-1; i >= 0; i--) {
+    		 System.out.println(i);
     	        V temp = this.get(0);
     	        this.set(0, this.get(i));
     	        this.set(i, temp);
@@ -215,32 +331,53 @@ public class LinkedList<V extends IUserType> {
          
          try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("LinkedList.dat")))
          {
-        	 Node<V> currNode = this.head.next;
-             while (currNode != this.head) {
-            	 oos.writeObject(currNode.data);
-                 currNode = currNode.next;
-             }
+        	 HeadNode<V> head = this.head.next;
+        	 Node<V> currNode = head.data.next;
+        	 while(head != this.head) {
+        		 while (currNode != head.data) {
+        			 oos.writeObject(currNode.data);
+        			 currNode = currNode.next;
+        		 }
+        		 oos.writeObject(null);
+        		 head = head.next;
+        		 currNode = head.data.next;
+        	 }
          }
          catch(Exception ex){
               
              System.out.println(ex.getMessage());
          } 
     }
-    
+   
     public void load() {
     	this.clean();
     	V currNode = null;
+    	V data = null;
+    	HeadNode head = new HeadNode(null,null,null);
     	try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream("LinkedList.dat")))
         {
     		
     		boolean bool = true;
-             while(bool) {
-            	 currNode = (V) ois.readObject();
-            	 this.add(currNode);
+    		boolean check = false;
+             while(bool) {     	 
+            		 currNode = (V) ois.readObject();
+            		 if(currNode == null) {
+            			 check = true;
+            		 } else {
+            			 if(check) {
+            				 this.addInNewList(currNode);
+            				 check = false;
+            			 }else {
+            				 this.add(currNode);
+            				 data = currNode;
+            			 }
+            		 }
+
+ //           		 this.add(currNode);
              }
         }
         catch(Exception ex){
-             this.setType(currNode); 
+                   this.setType(data); 
         } 
     }
     

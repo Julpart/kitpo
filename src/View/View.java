@@ -113,7 +113,7 @@ public class View extends JFrame {
 		      }
 		      jButtonSave.addActionListener(new ActionListener() {
 			    		  public void actionPerformed(ActionEvent e){
-		                       list.save();
+		                     //  list.save();
 		                       jLabel.setText(list.printList());
 		                    }
 			    	  });
